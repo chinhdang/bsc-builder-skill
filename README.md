@@ -56,9 +56,25 @@ bsc-builder/
     └── standard-measures-catalog.md  # Danh mục thước đo chuẩn BSC
 ```
 
+## Sử dụng trên các AI platform khác
+
+Ngoài Claude Code, bạn có thể dùng skill này trên **bất kỳ AI platform nào** (Claude Chat, Gemini, ChatGPT, v.v.) bằng file tổng hợp:
+
+1. Download file [`bsc-builder-full.md`](bsc-builder-full.md) (60KB, 1 file duy nhất)
+2. Upload vào conversation hoặc paste nội dung
+3. Prompt: *"Hãy đóng vai BSC consultant theo hướng dẫn trong file. Bắt đầu từ Step 0."*
+
+| Platform | Cách dùng |
+|----------|-----------|
+| **Claude Code CLI** | `/bsc-builder` — tự động load |
+| **Claude Chat** | Upload `bsc-builder-full.md` → prompt bắt đầu |
+| **Gemini** | Upload file hoặc paste content |
+| **ChatGPT** | Upload file, hoặc tạo Custom GPT với file làm knowledge |
+
 ## Yêu cầu
 
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code)
+- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) (cho bản skill)
+- Hoặc bất kỳ AI chat nào hỗ trợ file upload (cho bản `bsc-builder-full.md`)
 
 ## Giấy phép
 
@@ -68,7 +84,7 @@ MIT
 
 # BSC Builder Skill for Claude Code
 
-Interactive BSC (Balanced Scorecard) strategic plan builder for SMEs. 4 phases, 16 steps — from business discovery to complete strategy export.
+Interactive BSC (Balanced Scorecard) strategic plan builder for SMEs. 4 phases, 17 steps — from business discovery to complete strategy export.
 
 ## Features
 
@@ -86,27 +102,25 @@ Interactive BSC (Balanced Scorecard) strategic plan builder for SMEs. 4 phases, 
 ## Installation
 
 ```bash
-# Copy to Claude Code skills directory
-cp -r bsc-builder-skill/ ~/.claude/skills/bsc-builder/
+git clone https://github.com/chinhdang/bsc-builder-skill.git ~/.claude/skills/bsc-builder
 ```
 
 ## Usage
 
-In Claude Code CLI, invoke the skill:
+In Claude Code CLI:
 
 ```
 /bsc-builder
 ```
 
-The skill runs an interactive step-by-step process. Each step requires user confirmation before proceeding.
+## Use on other AI platforms
 
-## Structure
-
-See the Vietnamese section above for the file tree.
+Download [`bsc-builder-full.md`](bsc-builder-full.md) (60KB single file) and upload to any AI chat (Claude Chat, Gemini, ChatGPT). Prompt: *"Act as a BSC consultant following the guide in this file. Start from Step 0."*
 
 ## Requirements
 
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code)
+- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) (for skill version)
+- Or any AI chat with file upload support (for `bsc-builder-full.md`)
 
 ## License
 
