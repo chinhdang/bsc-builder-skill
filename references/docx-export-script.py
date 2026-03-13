@@ -1,6 +1,7 @@
 """
 BSC Strategic Plan — Professional DOCX Export Script
-Generates a polished DOCX with styled tables, callout boxes, cover page.
+Generates a polished DOCX with styled tables, callout boxes, cover page,
+section banners, header/footer, insight boxes, and strategy cards.
 
 Usage by AI:
   1. Read bsc-data/*.md files
@@ -11,138 +12,70 @@ Dependencies: pip install python-docx
 """
 
 from docx import Document
-from docx.shared import Pt, Cm, Inches, RGBColor, Emu
+from docx.shared import Pt, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
-from docx.enum.section import WD_ORIENT
 from docx.oxml.ns import qn, nsdecls
 from docx.oxml import parse_xml
-import os
-import re
 from datetime import datetime
+import os
+import sys
+
+# Allow importing helpers from same directory
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from docx_export_helpers import (
+    # Colors
+    DARK_BLUE, MED_BLUE, GRAY, DARK_GRAY, WHITE, BLACK,
+    LIGHT_BLUE_HEX, DARK_BLUE_HEX, MED_BLUE_HEX,
+    LIGHT_GRAY_HEX, BORDER_GRAY, GREEN_HEX, RED_HEX, COLORS,
+    # Cell helpers
+    set_cell_shading, set_cell_border, set_cell_vertical_alignment,
+    set_cell_margins, set_cell_text_multiline,
+    # Paragraph helpers
+    add_run, add_mixed_run, add_styled_paragraph,
+    add_paragraph_with_bottom_border,
+    # Section/layout helpers
+    add_section_banner, add_section_intro, add_insight_box,
+    # Header/footer
+    setup_header_footer,
+)
 
 
-# ── Color Palette ──────────────────────────────────────────────────
-DARK_BLUE = RGBColor(0x1F, 0x4E, 0x79)
-MED_BLUE = RGBColor(0x2E, 0x75, 0xB6)
-LIGHT_BLUE_HEX = "DEEAF1"
-DARK_BLUE_HEX = "1F4E79"
-MED_BLUE_HEX = "2E75B6"
-GRAY = RGBColor(0x59, 0x59, 0x59)
-DARK_GRAY = RGBColor(0x44, 0x44, 0x44)
-WHITE = RGBColor(0xFF, 0xFF, 0xFF)
-BLACK = RGBColor(0x00, 0x00, 0x00)
-LIGHT_GRAY_HEX = "F2F2F2"
-BORDER_GRAY = "BFBFBF"
-GREEN_HEX = "E2EFDA"
-RED_HEX = "FCE4EC"
-
-
-# ── Helpers ────────────────────────────────────────────────────────
-
-def set_cell_shading(cell, color_hex):
-    """Set cell background color."""
-    shading = parse_xml(f'<w:shd {nsdecls("w")} w:fill="{color_hex}"/>')
-    cell._element.get_or_add_tcPr().append(shading)
-
-
-def set_cell_border(cell, **kwargs):
-    """Set cell borders. kwargs: top, bottom, left, right with (size, color)."""
-    tc = cell._element
-    tcPr = tc.get_or_add_tcPr()
-    tcBorders = parse_xml(f'<w:tcBorders {nsdecls("w")}></w:tcBorders>')
-    for edge, (sz, color) in kwargs.items():
-        el = parse_xml(
-            f'<w:{edge} {nsdecls("w")} w:val="single" w:sz="{sz}" '
-            f'w:space="0" w:color="{color}"/>'
-        )
-        tcBorders.append(el)
-    tcPr.append(tcBorders)
-
-
-def set_cell_vertical_alignment(cell, align="center"):
-    """Set vertical alignment: top, center, bottom."""
-    tc = cell._element
-    tcPr = tc.get_or_add_tcPr()
-    vAlign = parse_xml(f'<w:vAlign {nsdecls("w")} w:val="{align}"/>')
-    tcPr.append(vAlign)
-
-
-def set_cell_margins(cell, top=0, bottom=0, left=100, right=100):
-    """Set cell margins in twips."""
-    tc = cell._element
-    tcPr = tc.get_or_add_tcPr()
-    margins = parse_xml(
-        f'<w:tcMar {nsdecls("w")}>'
-        f'<w:top w:w="{top}" w:type="dxa"/>'
-        f'<w:bottom w:w="{bottom}" w:type="dxa"/>'
-        f'<w:start w:w="{left}" w:type="dxa"/>'
-        f'<w:end w:w="{right}" w:type="dxa"/>'
-        f'</w:tcMar>'
-    )
-    tcPr.append(margins)
-
-
-def add_run(paragraph, text, size=10, bold=False, italic=False, color=BLACK, font_name=None):
-    """Add a styled run to paragraph."""
-    run = paragraph.add_run(text)
-    run.font.size = Pt(size)
-    run.font.bold = bold
-    run.font.italic = italic
-    run.font.color.rgb = color
-    if font_name:
-        run.font.name = font_name
-    return run
-
-
-def add_styled_paragraph(doc, text, size=10, bold=False, italic=False,
-                          color=BLACK, alignment=None, space_before=0,
-                          space_after=6):
-    """Add a paragraph with consistent styling."""
-    p = doc.add_paragraph()
-    if alignment is not None:
-        p.alignment = alignment
-    p.paragraph_format.space_before = Pt(space_before)
-    p.paragraph_format.space_after = Pt(space_after)
-    add_run(p, text, size=size, bold=bold, italic=italic, color=color)
-    return p
-
+# ── Heading Helper ─────────────────────────────────────────────────
 
 def add_heading_styled(doc, text, level=1):
-    """Add heading with custom blue styling."""
-    h = doc.add_heading(text, level=level)
-    for run in h.runs:
-        if level == 1:
-            run.font.size = Pt(16)
-            run.font.color.rgb = DARK_BLUE
-        elif level == 2:
-            run.font.size = Pt(13)
-            run.font.color.rgb = MED_BLUE
-        elif level == 3:
-            run.font.size = Pt(11)
-            run.font.color.rgb = MED_BLUE
-    return h
+    """Add section heading.
+
+    Level 1 → full-width dark-blue banner (section_banner).
+    Level 2 → H2 with bottom border.
+    Level 3 → styled paragraph (bold, medium blue).
+    """
+    if level == 1:
+        return add_section_banner(doc, text)
+    elif level == 2:
+        return add_paragraph_with_bottom_border(doc, text, size=13, bold=True,
+                                                color=MED_BLUE)
+    else:
+        return add_styled_paragraph(doc, text, size=11, bold=True, color=MED_BLUE,
+                                    space_before=10, space_after=5)
 
 
 # ── Component Builders ─────────────────────────────────────────────
 
-def add_cover_page(doc, company_name, subtitle, period, date_str, prepared_by,
-                   prepared_for):
-    """Professional cover page."""
+def add_cover_page(doc, company_name, subtitle, period, date_str,
+                   prepared_by, prepared_for):
+    """Professional cover page (no header/footer via different_first_page)."""
     for _ in range(5):
         doc.add_paragraph()
 
-    # Title
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     add_run(p, "BSC STRATEGIC PLAN", size=28, bold=True, color=DARK_BLUE)
 
-    # Company
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     add_run(p, company_name, size=20, bold=True, color=MED_BLUE)
 
-    # Subtitle
     if subtitle:
         p = doc.add_paragraph()
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -150,7 +83,6 @@ def add_cover_page(doc, company_name, subtitle, period, date_str, prepared_by,
 
     doc.add_paragraph()
 
-    # Metadata
     for text in [
         f"Kỳ chiến lược: {period}",
         f"Chuẩn bị bởi: {prepared_by}",
@@ -164,8 +96,10 @@ def add_cover_page(doc, company_name, subtitle, period, date_str, prepared_by,
     doc.add_page_break()
 
 
-def add_callout_box(doc, title, body_text, bg_color=LIGHT_BLUE_HEX):
-    """Callout box as single-cell table with colored background."""
+def add_callout_box(doc, title, body_text, bg_color=None):
+    """Callout box: single-cell table with colored background."""
+    if bg_color is None:
+        bg_color = LIGHT_BLUE_HEX
     table = doc.add_table(rows=1, cols=1)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     cell = table.rows[0].cells[0]
@@ -176,20 +110,21 @@ def add_callout_box(doc, title, body_text, bg_color=LIGHT_BLUE_HEX):
                     left=("1", BORDER_GRAY), right=("1", BORDER_GRAY))
     set_cell_margins(cell, top=100, bottom=100, left=150, right=150)
 
-    # Title
     p = cell.paragraphs[0]
     add_run(p, title, size=13, bold=True, color=DARK_BLUE)
 
-    # Body
     p2 = cell.add_paragraph()
     add_run(p2, body_text, size=10, color=GRAY)
 
-    doc.add_paragraph()  # spacing
+    doc.add_paragraph()
     return table
 
 
 def add_data_table(doc, headers, rows, col_widths=None):
-    """Professional data table with dark blue header row."""
+    """Professional data table with dark-blue header row.
+
+    Cell text supports \\n for multi-line content within a cell.
+    """
     table = doc.add_table(rows=1 + len(rows), cols=len(headers))
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
@@ -210,11 +145,9 @@ def add_data_table(doc, headers, rows, col_widths=None):
             cell = table.rows[r_idx + 1].cells[c_idx]
             if bg:
                 set_cell_shading(cell, bg)
-            set_cell_margins(cell, top=40, bottom=40, left=80, right=80)
-            p = cell.paragraphs[0]
-            add_run(p, str(cell_text), size=10, color=BLACK)
+            # Support \n line breaks in cell content
+            set_cell_text_multiline(cell, str(cell_text), size=10, color=BLACK)
 
-    # Set column widths if provided
     if col_widths:
         for row in table.rows:
             for i, width in enumerate(col_widths):
@@ -230,33 +163,22 @@ def add_comparison_table(doc, title, before_items, after_items):
     if title:
         add_heading_styled(doc, title, level=2)
 
-    headers = ["Trước", "Sau"]
     table = doc.add_table(rows=1 + len(before_items), cols=2)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
-    # Header
-    for i, h in enumerate(headers):
+    for i, h in enumerate(["Trước", "Sau"]):
         cell = table.rows[0].cells[i]
         set_cell_shading(cell, DARK_BLUE_HEX)
         set_cell_margins(cell, top=50, bottom=50, left=80, right=80)
-        p = cell.paragraphs[0]
-        add_run(p, h, size=10, bold=True, color=WHITE)
+        add_run(cell.paragraphs[0], h, size=10, bold=True, color=WHITE)
 
-    # Rows
     for r_idx in range(len(before_items)):
-        # Before cell (light red)
-        cell_before = table.rows[r_idx + 1].cells[0]
-        set_cell_shading(cell_before, RED_HEX)
-        set_cell_margins(cell_before, top=40, bottom=40, left=80, right=80)
-        p = cell_before.paragraphs[0]
-        add_run(p, before_items[r_idx], size=10, color=BLACK)
-
-        # After cell (light green)
-        cell_after = table.rows[r_idx + 1].cells[1]
-        set_cell_shading(cell_after, GREEN_HEX)
-        set_cell_margins(cell_after, top=40, bottom=40, left=80, right=80)
-        p = cell_after.paragraphs[0]
-        add_run(p, after_items[r_idx], size=10, color=BLACK)
+        for col_idx, (item, bg) in enumerate(
+            [(before_items[r_idx], RED_HEX), (after_items[r_idx], GREEN_HEX)]
+        ):
+            cell = table.rows[r_idx + 1].cells[col_idx]
+            set_cell_shading(cell, bg)
+            set_cell_text_multiline(cell, item, size=10, color=BLACK)
 
     doc.add_paragraph()
     return table
@@ -267,7 +189,6 @@ def add_numbered_card(doc, number, title, description, details=None):
     table = doc.add_table(rows=1, cols=2)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
-    # Number cell
     num_cell = table.rows[0].cells[0]
     num_cell.width = Cm(1.5)
     set_cell_shading(num_cell, MED_BLUE_HEX)
@@ -277,21 +198,58 @@ def add_numbered_card(doc, number, title, description, details=None):
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     add_run(p, str(number), size=18, bold=True, color=WHITE)
 
-    # Description cell
     desc_cell = table.rows[0].cells[1]
     set_cell_shading(desc_cell, LIGHT_BLUE_HEX)
     set_cell_margins(desc_cell, top=80, bottom=80, left=120, right=120)
 
-    p = desc_cell.paragraphs[0]
-    add_run(p, title, size=12, bold=True, color=MED_BLUE)
+    add_run(desc_cell.paragraphs[0], title, size=12, bold=True, color=MED_BLUE)
 
     if description:
-        p2 = desc_cell.add_paragraph()
-        add_run(p2, description, size=10, color=DARK_GRAY)
+        add_run(desc_cell.add_paragraph(), description, size=10, color=DARK_GRAY)
 
     if details:
-        p3 = desc_cell.add_paragraph()
-        add_run(p3, details, size=9.5, color=DARK_GRAY)
+        add_run(desc_cell.add_paragraph(), details, size=9.5, color=DARK_GRAY)
+
+    doc.add_paragraph()
+    return table
+
+
+def add_strategy_card(doc, number, title, type_text, rationale):
+    """Strategy card: colored header (dark blue, white text) + light blue body.
+
+    Args:
+        number: card sequence number
+        title:  strategy name/title
+        type_text: e.g. "Type: Direct | TOWS: S-O"
+        rationale: descriptive body text
+    """
+    table = doc.add_table(rows=2, cols=2)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+
+    # Header row spans 2 cols via merge
+    header_cell = table.rows[0].cells[0].merge(table.rows[0].cells[1])
+    set_cell_shading(header_cell, DARK_BLUE_HEX)
+    set_cell_margins(header_cell, top=80, bottom=80, left=120, right=120)
+    hp = header_cell.paragraphs[0]
+    add_run(hp, f"{number}. {title}", size=12, bold=True, color=WHITE)
+    if type_text:
+        hp2 = header_cell.add_paragraph()
+        add_run(hp2, type_text, size=9, color=RGBColor(0xBF, 0xD7, 0xED))
+
+    # Body: number badge (left) + rationale (right)
+    num_cell = table.rows[1].cells[0]
+    num_cell.width = Cm(1.5)
+    set_cell_shading(num_cell, MED_BLUE_HEX)
+    set_cell_vertical_alignment(num_cell, "center")
+    set_cell_margins(num_cell, top=80, bottom=80, left=60, right=60)
+    np_ = num_cell.paragraphs[0]
+    np_.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    add_run(np_, str(number), size=18, bold=True, color=WHITE)
+
+    body_cell = table.rows[1].cells[1]
+    set_cell_shading(body_cell, LIGHT_BLUE_HEX)
+    set_cell_margins(body_cell, top=80, bottom=80, left=120, right=120)
+    add_run(body_cell.paragraphs[0], rationale, size=10, color=DARK_GRAY)
 
     doc.add_paragraph()
     return table
@@ -303,7 +261,6 @@ def add_kpi_table(doc, perspective_name, kpis):
     kpis: list of dicts with keys: name, type, baseline, q1, q2, q3, owner
     """
     add_heading_styled(doc, perspective_name, level=2)
-
     headers = ["#", "KPI", "Loại", "Baseline", "Q1", "Q2", "Q3", "Owner"]
     rows = []
     for i, kpi in enumerate(kpis, 1):
@@ -317,7 +274,6 @@ def add_kpi_table(doc, perspective_name, kpis):
             kpi.get("q3", ""),
             kpi.get("owner", ""),
         ])
-
     add_data_table(doc, headers, rows)
 
 
@@ -337,26 +293,22 @@ def add_causal_chain_table(doc, chains):
             c.get("customer", ""),
             c.get("financial", ""),
         ])
-
     add_data_table(doc, headers, rows)
 
 
 def add_resource_loading(doc, people):
     """Resource loading table.
 
-    people: list of dicts with keys: name, role, allocations (list of
-            {activity, percent}), total, status
+    people: list of dicts with keys: name, role, allocations, total, status
     """
     for person in people:
         add_heading_styled(doc, f"{person['name']} — {person['role']}", level=3)
         headers = ["Hoạt động", "Phân bổ %"]
         rows = [[a["activity"], f"{a['percent']}%"]
                 for a in person["allocations"]]
-        rows.append([f"TỔNG", f"{person['total']}%"])
+        rows.append(["TỔNG", f"{person['total']}%"])
+        add_data_table(doc, headers, rows)
 
-        table = add_data_table(doc, headers, rows)
-
-        # Status indicator
         status = person.get("status", "Balanced")
         color = MED_BLUE if "Balanced" in status else RGBColor(0xC0, 0x39, 0x2B)
         add_styled_paragraph(doc, f"Status: {status}", size=10, bold=True,
@@ -370,7 +322,6 @@ def add_four_d_table(doc, person_name, current, ideal, quarterly):
     quarterly: list of dicts with keys: quarter, do, decide, delegate, design
     """
     add_heading_styled(doc, f"4D Mix — {person_name}", level=3)
-
     headers = ["Quarter", "Do", "Decide", "Delegate", "Design"]
     rows = [["Current", f"{current['do']}%", f"{current['decide']}%",
              f"{current['delegate']}%", f"{current['design']}%"]]
@@ -379,7 +330,6 @@ def add_four_d_table(doc, person_name, current, ideal, quarterly):
                      f"{q['delegate']}%", f"{q['design']}%"])
     rows.append(["Ideal", f"{ideal['do']}%", f"{ideal['decide']}%",
                  f"{ideal['delegate']}%", f"{ideal['design']}%"])
-
     add_data_table(doc, headers, rows)
 
 
@@ -388,8 +338,7 @@ def add_image_with_caption(doc, image_path, caption, width_cm=15):
     if os.path.exists(image_path):
         p = doc.add_paragraph()
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run = p.add_run()
-        run.add_picture(image_path, width=Cm(width_cm))
+        p.add_run().add_picture(image_path, width=Cm(width_cm))
 
     p_cap = doc.add_paragraph()
     p_cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -397,12 +346,13 @@ def add_image_with_caption(doc, image_path, caption, width_cm=15):
     doc.add_paragraph()
 
 
-def add_bullet_list(doc, items, size=10, color=BLACK):
+def add_bullet_list(doc, items, size=10, color=None):
     """Add bullet list items."""
+    if color is None:
+        color = BLACK
     for item in items:
         p = doc.add_paragraph(style="List Bullet")
         p.paragraph_format.space_after = Pt(3)
-        # Clear default run, add styled one
         if p.runs:
             p.runs[0].font.size = Pt(size)
             p.runs[0].font.color.rgb = color
@@ -412,15 +362,9 @@ def add_bullet_list(doc, items, size=10, color=BLACK):
 
 
 def add_swot_matrix(doc, strengths, weaknesses, opportunities, threats):
-    """2x2 SWOT matrix with colored quadrants."""
+    """2x2 SWOT matrix with semantic colored quadrants."""
     table = doc.add_table(rows=3, cols=2)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
-
-    # Headers
-    labels = [("STRENGTHS", "E2EFDA"), ("WEAKNESSES", "FCE4EC"),
-              ("OPPORTUNITIES", "DEEAF1"), ("THREATS", "FFF2CC")]
-
-    positions = [(1, 0), (1, 1), (2, 0), (2, 1)]
 
     # Top header row
     for i, label in enumerate(["Internal", "External"]):
@@ -430,18 +374,29 @@ def add_swot_matrix(doc, strengths, weaknesses, opportunities, threats):
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
         add_run(p, label if i == 0 else "", size=10, bold=True, color=WHITE)
 
-    for idx, ((row, col), (label, bg)) in enumerate(zip(positions, labels)):
+    # Quadrant config: (row, col, label, bg_hex, text_color)
+    quadrants = [
+        (1, 0, "STRENGTHS",    COLORS["green_light"],  COLORS["green"]),
+        (1, 1, "WEAKNESSES",   COLORS["red_light"],    COLORS["red"]),
+        (2, 0, "OPPORTUNITIES", LIGHT_BLUE_HEX,        DARK_BLUE_HEX),
+        (2, 1, "THREATS",      COLORS["gold_light"],   COLORS["gold"]),
+    ]
+    items_map = [strengths, weaknesses, opportunities, threats]
+
+    for idx, (row, col, label, bg, text_color_hex) in enumerate(quadrants):
         cell = table.rows[row].cells[col]
         set_cell_shading(cell, bg)
         set_cell_margins(cell, top=80, bottom=80, left=100, right=100)
 
-        p = cell.paragraphs[0]
-        add_run(p, label, size=11, bold=True, color=DARK_BLUE)
+        label_color = RGBColor(
+            int(text_color_hex[0:2], 16),
+            int(text_color_hex[2:4], 16),
+            int(text_color_hex[4:6], 16),
+        )
+        add_run(cell.paragraphs[0], label, size=11, bold=True, color=label_color)
 
-        items_map = [strengths, weaknesses, opportunities, threats]
         for item in items_map[idx]:
-            p2 = cell.add_paragraph()
-            add_run(p2, f"  {item}", size=9.5, color=BLACK)
+            add_run(cell.add_paragraph(), f"  {item}", size=9.5, color=BLACK)
 
     doc.add_paragraph()
     return table
@@ -453,7 +408,6 @@ def setup_document():
     """Create document with professional page setup and styles."""
     doc = Document()
 
-    # Page setup: A4, narrow margins
     for section in doc.sections:
         section.page_width = Cm(21.0)
         section.page_height = Cm(29.7)
@@ -461,8 +415,9 @@ def setup_document():
         section.bottom_margin = Cm(2.0)
         section.left_margin = Cm(2.0)
         section.right_margin = Cm(2.0)
+        # Cover page gets its own header/footer (blank)
+        section.different_first_page_header_footer = True
 
-    # Configure heading styles
     for i, (size, color) in enumerate(
         [(16, DARK_BLUE), (13, MED_BLUE), (11, MED_BLUE)], start=1
     ):
@@ -473,7 +428,6 @@ def setup_document():
         style.paragraph_format.space_before = Pt(20 if i == 1 else 14)
         style.paragraph_format.space_after = Pt(10 if i == 1 else 7)
 
-    # Normal style
     normal = doc.styles["Normal"]
     normal.font.size = Pt(10)
     normal.font.name = "Calibri"
@@ -487,35 +441,44 @@ def setup_document():
 def export_bsc_plan(data, output_path):
     """Export BSC Strategic Plan to professional DOCX.
 
-    data: dict with all BSC plan content (see TEMPLATE below)
+    data: dict with all BSC plan content (see DATA_TEMPLATE below)
     output_path: path for output .docx file
     """
     doc = setup_document()
+    date_str = data.get("date", datetime.now().strftime("%d/%m/%Y"))
+    doc_title = data.get("doc_title", "BSC Strategic Plan")
+    company_name = data.get("company_name", "")
 
-    # ─── Cover Page ───
+    # ─── Cover Page (first page — no header/footer) ───
     add_cover_page(
         doc,
-        company_name=data["company_name"],
+        company_name=company_name,
         subtitle=data.get("subtitle", ""),
         period=data.get("period", "2025-2026"),
-        date_str=data.get("date", datetime.now().strftime("%d/%m/%Y")),
+        date_str=date_str,
         prepared_by=data.get("prepared_by", "BSC Strategic Planning Consultant"),
         prepared_for=data.get("prepared_for", "Ban Lãnh đạo"),
     )
 
-    # ─── Executive Summary (callout box) ───
+    # ─── Header / Footer (applied to the main section, skip cover) ───
+    section = doc.sections[0]
+    setup_header_footer(section, doc_title, company_name, date_str)
+
+    # ─── Executive Summary ───
     add_callout_box(doc, "Tóm tắt", data.get("executive_summary", ""))
 
     # ─── Summary Dashboard ───
     if "dashboard" in data:
         add_heading_styled(doc, "Summary Dashboard", level=1)
+        if "dashboard_intro" in data:
+            add_section_intro(doc, data["dashboard_intro"])
         add_data_table(doc, ["Metric", "Value"], data["dashboard"])
 
     # ─── Company Profile ───
     if "company_profile" in data:
         add_heading_styled(doc, "Company Profile", level=1)
         for line in data["company_profile"]:
-            add_styled_paragraph(doc, line, size=10, color=BLACK)
+            add_styled_paragraph(doc, line, size=10)
 
     # ─── Vision & Mission ───
     if "vision" in data:
@@ -534,13 +497,17 @@ def export_bsc_plan(data, output_path):
     if "products" in data:
         add_heading_styled(doc, "Products & Services", level=1)
         for i, prod in enumerate(data["products"], 1):
-            add_numbered_card(doc, i, prod["name"], prod.get("description", ""),
+            add_numbered_card(doc, i, prod["name"],
+                               prod.get("description", ""),
                                prod.get("details", ""))
 
     # ─── Reality Check ───
     if "reality_check" in data:
         add_heading_styled(doc, "Reality Check — Key Insights", level=1)
         rc = data["reality_check"]
+
+        if "intro" in rc:
+            add_section_intro(doc, rc["intro"])
 
         if "market_context" in rc:
             add_heading_styled(doc, "Market Context", level=2)
@@ -552,6 +519,7 @@ def export_bsc_plan(data, output_path):
 
         if "critical_risks" in rc:
             add_heading_styled(doc, "Critical Risks", level=2)
+            # Severity column uses semantic color via cell text (plain for now)
             add_data_table(doc, ["Risk", "Severity", "Mitigation"],
                            rc["critical_risks"])
 
@@ -562,7 +530,7 @@ def export_bsc_plan(data, output_path):
                            rc["perception_gaps"])
 
         if "key_insight" in rc:
-            add_callout_box(doc, "Key Insight", rc["key_insight"])
+            add_insight_box(doc, rc["key_insight"])
 
     # ─── SWOT Matrix ───
     if "swot" in data:
@@ -572,13 +540,15 @@ def export_bsc_plan(data, output_path):
                         s.get("opportunities", []), s.get("threats", []))
 
         if "insight" in s:
-            add_callout_box(doc, "SWOT Key Insight", s["insight"])
+            add_insight_box(doc, s["insight"])
 
     # ─── Core Strategies ───
     if "strategies" in data:
         add_heading_styled(doc, "Core Strategies", level=1)
+        if "strategies_intro" in data:
+            add_section_intro(doc, data["strategies_intro"])
         for i, strat in enumerate(data["strategies"], 1):
-            add_numbered_card(
+            add_strategy_card(
                 doc, i, strat["name"],
                 f"Type: {strat.get('type', '')} | TOWS: {strat.get('tows', '')}",
                 strat.get("rationale", "")
@@ -598,8 +568,7 @@ def export_bsc_plan(data, output_path):
             add_data_table(doc, headers, perspective["items"])
 
             if "causality" in perspective:
-                add_callout_box(doc, "Causality",
-                                perspective["causality"], LIGHT_BLUE_HEX)
+                add_insight_box(doc, perspective["causality"])
 
     # ─── KPIs ───
     if "kpis" in data:
@@ -613,7 +582,7 @@ def export_bsc_plan(data, output_path):
         add_causal_chain_table(doc, data["causal_chains"])
 
         if "chain_narrative" in data:
-            add_callout_box(doc, "Chain Hypotheses", data["chain_narrative"])
+            add_insight_box(doc, data["chain_narrative"])
 
     # ─── Initiatives ───
     if "initiatives" in data:
@@ -652,7 +621,7 @@ def export_bsc_plan(data, output_path):
         add_data_table(doc, ["Criteria", "Score"], va.get("scores", []))
 
         if "narrative" in va:
-            add_callout_box(doc, "Plan Coherence", va["narrative"])
+            add_insight_box(doc, va["narrative"])
 
     # ─── Appendix ───
     add_heading_styled(doc, "Appendix", level=1)
@@ -663,7 +632,6 @@ def export_bsc_plan(data, output_path):
         size=9, italic=True, color=GRAY
     )
 
-    # Save
     doc.save(output_path)
     return output_path
 
@@ -673,28 +641,30 @@ def export_bsc_plan(data, output_path):
 # then call export_bsc_plan(DATA, output_path)
 
 DATA_TEMPLATE = {
-    "company_name": "{COMPANY NAME}",
-    "subtitle": "BSC Strategic Plan",
-    "period": "2025-2026 (1 year)",
-    "date": "13/03/2026",
-    "prepared_by": "BSC Strategic Planning Consultant",
-    "prepared_for": "Ban Lãnh đạo",
+    "company_name":  "{COMPANY NAME}",
+    "doc_title":     "BSC Strategic Plan",
+    "subtitle":      "BSC Strategic Plan",
+    "period":        "2025-2026 (1 year)",
+    "date":          "13/03/2026",
+    "prepared_by":   "BSC Strategic Planning Consultant",
+    "prepared_for":  "Ban Lãnh đạo",
 
     "executive_summary": "...",
 
     "dashboard": [
-        ["Revenue Target", "2.4B VND"],
-        ["Core Strategies", "3"],
+        ["Revenue Target",     "2.4B VND"],
+        ["Core Strategies",    "3"],
         ["Strategic Objectives", "17"],
     ],
+    "dashboard_intro": "Tóm lược các chỉ số chiến lược chính của kế hoạch.",
 
     "company_profile": [
         "Company: ...",
         "Industry: ...",
     ],
 
-    "vision": "...",
-    "mission": "...",
+    "vision":   "...",
+    "mission":  "...",
     "vision_milestones": ["Y1: ...", "Y3: ...", "Y5+: ..."],
 
     "products": [
@@ -702,21 +672,27 @@ DATA_TEMPLATE = {
     ],
 
     "reality_check": {
-        "market_context": "...",
+        "intro":               "Bối cảnh thị trường và những khoảng trống nhận thức.",
+        "market_context":      "...",
         "competitive_position": "...",
-        "critical_risks": [["Risk 1", "High", "Mitigation..."]],
-        "perception_gaps": [["Dim", "User said...", "Research found...", "Gap"]],
+        "critical_risks": [
+            ["Risk 1", "High", "Mitigation..."],
+        ],
+        "perception_gaps": [
+            ["Dim", "User said...", "Research found...", "Gap"],
+        ],
         "key_insight": "...",
     },
 
     "swot": {
-        "strengths": ["S1...", "S2..."],
-        "weaknesses": ["W1...", "W2..."],
+        "strengths":     ["S1...", "S2..."],
+        "weaknesses":    ["W1...", "W2..."],
         "opportunities": ["O1...", "O2..."],
-        "threats": ["T1...", "T2..."],
-        "insight": "...",
+        "threats":       ["T1...", "T2..."],
+        "insight":       "...",
     },
 
+    "strategies_intro": "Ba chiến lược cốt lõi được chọn dựa trên phân tích TOWS.",
     "strategies": [
         {"name": "CS1: ...", "type": "Direct", "tows": "S-O",
          "rationale": "..."},
@@ -724,9 +700,8 @@ DATA_TEMPLATE = {
 
     "objectives": [
         {
-            "name": "Financial",
-            "items": [["F1", "Revenue 2.4B", "Cumulative", "300M", "900M",
-                       "2.4B"]],
+            "name":      "Financial",
+            "items": [["F1", "Revenue 2.4B", "Cumulative", "300M", "900M", "2.4B"]],
             "causality": "...",
         },
     ],
@@ -746,30 +721,30 @@ DATA_TEMPLATE = {
             "name": "CEO",
             "role": "CEO",
             "allocations": [
-                {"activity": "Sales", "percent": 25},
+                {"activity": "Sales",     "percent": 25},
                 {"activity": "Strategic", "percent": 15},
             ],
-            "total": 100,
+            "total":  100,
             "status": "Balanced",
         },
     ],
 
     "four_d_mix": [
         {
-            "name": "CEO",
+            "name":    "CEO",
             "current": {"do": 45, "decide": 30, "delegate": 15, "design": 10},
-            "ideal": {"do": 10, "decide": 25, "delegate": 25, "design": 40},
+            "ideal":   {"do": 10, "decide": 25, "delegate": 25, "design": 40},
             "quarterly": [
-                {"quarter": "Q1", "do": 35, "decide": 28, "delegate": 20,
-                 "design": 17},
+                {"quarter": "Q1", "do": 35, "decide": 28,
+                 "delegate": 20, "design": 17},
             ],
         },
     ],
 
     "roadmap": [
         {
-            "name": "Q1 (Apr-Jun 2026)",
-            "items": ["Item 1", "Item 2"],
+            "name":           "Q1 (Apr-Jun 2026)",
+            "items":          ["Item 1", "Item 2"],
             "revenue_target": "300M cumulative",
         },
     ],
@@ -777,7 +752,7 @@ DATA_TEMPLATE = {
     "vision_alignment": {
         "scores": [
             ["Objectives traced to Vision", "17/17 = 100%"],
-            ["Overall Alignment", "STRONG (100%)"],
+            ["Overall Alignment",           "STRONG (100%)"],
         ],
         "narrative": "...",
     },
@@ -787,7 +762,6 @@ DATA_TEMPLATE = {
 # ── Entry Point ────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    # Demo: export with template data
     output = "./bsc-data/BSC-Strategic-Plan-DEMO.docx"
     os.makedirs("./bsc-data", exist_ok=True)
     export_bsc_plan(DATA_TEMPLATE, output)
