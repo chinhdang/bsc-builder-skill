@@ -915,7 +915,42 @@ Standalone file — the full Reality Check from Steps 4-5. Export as-is from `bs
 Schema-compliant. Data only, no narrative.
 
 ### DOCX Export
-Professional document: cover page, TOC, executive summary, full BSC analysis (same structure as Markdown above), implementation roadmap, Reality Check as appendix.
+
+**Ask user:** "Bạn muốn xuất file DOCX không? Cần cài pandoc (`brew install pandoc` hoặc `apt install pandoc`)."
+
+**If user accepts:**
+
+**AI does:**
+1. Save the BSC Strategic Plan markdown first
+2. Convert markdown → DOCX with pandoc:
+
+```bash
+pandoc "./bsc-data/BSC-Strategic-Plan-{Company}.md" \
+  -o "./bsc-data/BSC-Strategic-Plan-{Company}.docx" \
+  --from markdown --to docx \
+  --toc --toc-depth=2 \
+  --metadata title="BSC Strategic Plan — {Company Name}" \
+  --metadata author="BSC Strategic Planning Consultant" \
+  --metadata date="{YYYY-MM-DD}" \
+  --highlight-style=tango --columns=72
+```
+
+3. If pandoc not available, use Python `python-docx` fallback (`pip install python-docx`):
+   - Cover page: company name, plan period, date (centered, styled)
+   - Parse markdown headers → Word Heading 1/2/3
+   - Parse markdown tables → Word Table Grid with bold headers
+   - Preserve bold/italic inline formatting
+   - Page breaks between major sections
+   - Professional font (Calibri), consistent heading hierarchy
+
+4. Notify: "📄 Đã xuất DOCX → bsc-data/BSC-Strategic-Plan-{Company}.docx"
+
+**DOCX quality checklist:**
+- [ ] Cover page with company name, plan period, date
+- [ ] Table of contents (auto-generated from headings)
+- [ ] All markdown tables rendered as Word tables
+- [ ] Bold/italic formatting preserved
+- [ ] Page breaks between major sections
 
 ---
 
