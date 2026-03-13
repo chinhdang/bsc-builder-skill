@@ -772,27 +772,150 @@ Present recommended weekly ritual:
 ## Step 13 — Final Assembly
 
 **AI does:**
-1. Read `references/json-schema.md` for JSON compliance
-2. Compile:
-   - **Reality Check Report** (Markdown) — standalone file
-   - **BSC Strategic Plan** (Markdown) — full narrative with reasoning
-   - **JSON** — Schema-compliant
-   - **DOCX** — Professional document: cover page, TOC, executive summary,
-     Reality Check highlights, full BSC analysis, implementation roadmap,
-     Reality Check as appendix
+1. Read ALL `bsc-data/*.md` files to gather full analytical context from each step
+2. Compile deliverables (see structure below)
 3. **4D Mix Analysis** (if Step 12b was completed) — include in BSC Plan + DOCX
-4. **Summary Dashboard**: revenue target, # strategies, # objectives, # KPIs,
-   # initiatives, total budget, team target, 4D alignment status
-5. **Vision Alignment Score:**
-   - % of objectives traced to Vision Milestones
-   - Mission Test results per strategy (pass/fail/user-override)
-   - Blind spots: Vision Milestones without supporting strategies
-   - Resource utilization: capacity vs. KPI load assessment
-   - Overall alignment rating: Strong (≥80%) / Moderate (50-79%) / Weak (<50%)
 
-**Save:** Update INDEX.md — all rows ✅, Current step → 13, Phase → 4 (Export), Last updated → today. Final exports are separate deliverables.
+**Save:** Update INDEX.md — all rows, Current step → 13, Phase → 4 (Export), Last updated → today.
 
 **Ask user:** Final review → export.
+
+---
+
+## BSC Strategic Plan — Document Structure
+
+The BSC Strategic Plan (Markdown) is the PRIMARY deliverable. It must be a **self-contained strategic document** that any reader can understand WITHOUT having participated in the AI-human collaboration process.
+
+**Principle:** Every metric, rating, or decision in the plan must have its **WHY** explained. Tables summarize; narrative sections explain the reasoning behind them.
+
+### Required Sections (in order):
+
+#### 1. EXECUTIVE SUMMARY (1 page max)
+- Company snapshot (name, industry, stage, team size)
+- Core challenge statement — the 1-2 existential problems this plan addresses
+- Strategy thesis: 2-3 core strategies in one sentence each
+- Key targets: revenue, MRR, critical milestones
+- Vision Alignment Score (overall rating)
+
+#### 2. SUMMARY DASHBOARD
+Quick-reference table: Revenue Target, # Strategies, # Objectives, # KPIs, # Initiatives, Budget, Team, Resource Loading status, 4D Alignment status, Vision Alignment Score.
+
+#### 3. COMPANY PROFILE
+From Step 0. Include: legal name, industry, stage, team roster with roles, current revenue, target revenue.
+
+#### 4. VISION & MISSION
+- Vision statement + Mission statement
+- **Vision Milestones** (Y1 → Y3 → Y5+) with rationale for each horizon
+- **Mission Tests** — 3 binary tests that validate every strategy against mission
+
+#### 5. PRODUCTS & SERVICES
+From Step 1. Include: product/service lines with revenue contribution %, USP, unfair advantages, ICP definition.
+
+#### 6. REALITY CHECK — KEY INSIGHTS
+**This is a NARRATIVE section, not just data tables.**
+
+From Steps 4-5 (Reality Check). Include:
+- **Market context:** Size, growth rate, key trends — with source citations
+- **Competitive position:** Where company is ahead/behind/blind — with specific competitor analysis
+- **Critical risks:** Top 3-5 risks with severity assessment and mitigation approach
+- **Perception vs Reality gaps:** Where user's initial perception (Step 3b survey) diverged from research findings. Format: "User rated [X] as [rating]. Research found [evidence]. Gap: [assessment]."
+- **Key insight narrative:** 2-3 paragraphs explaining the most important findings that shaped strategy decisions
+
+#### 7. SWOT MATRIX
+From Step 8. Present SWOT grid with star-rated priority items.
+
+**Include after the matrix:**
+- **Rating rationale** (1-2 sentences per starred item explaining WHY it's high-priority)
+- **Key SWOT insight:** 1 paragraph — what pattern emerges from the SWOT that drives strategy selection?
+
+#### 8. CORE STRATEGIES
+From Steps 9-10. For EACH strategy (2-3 max):
+
+- **Strategy statement** (1 sentence)
+- **Type:** Direct revenue / Enabling / Defensive
+- **TOWS origin:** Which S-O / W-O / S-T / W-T combination generated this strategy
+- **Selection rationale:** WHY this strategy was chosen over alternatives. What alternatives were considered and rejected? What was the deciding factor?
+- **Vision Milestone link:** Which Y1/Y3/Y5+ milestone does this serve?
+- **Mission Test:** Pass/fail against each mission test
+- **Resource-strategy fit:** Does the team have capacity for this? Any gaps?
+
+**Include:** "Strategies NOT selected" section — briefly list 2-3 strategies that were generated but filtered out, with reason for exclusion.
+
+#### 9. STRATEGIC OBJECTIVES (4 Perspectives)
+From Step 11. Table format per perspective (Financial, Customer, Process, Foundation).
+
+**Include after each perspective table:**
+- **Causality narrative:** 1-2 sentences explaining HOW objectives in this perspective drive the perspective above
+- **Calibration notes:** Where targets were adjusted from initial estimates and why
+
+**Include after all 4 tables:**
+- **Traceability table:** Objective → Strategy → Vision Milestone (full chain)
+- **Orphan check result:** Any objectives without clear vision connection (should be zero)
+
+#### 10. KPIs
+From Step 12. Table per perspective with: KPI name, type (leading/lagging), baseline, quarterly targets, owner, contributors.
+
+**Include after KPI tables:**
+- **Benchmark context:** For key KPIs, note the industry benchmark used and how targets compare
+- **Estimation flags:** Which baselines are estimates vs. actual data? Which targets need validation?
+
+#### 11. CAUSAL CHAIN MAP
+From Step 12 (KPI Causal Chain Mapping). Table format: Chain # | Foundation (Leading) → Process → Customer → Financial (Lagging).
+
+**Include after the map:**
+- **Chain hypotheses narrative:** For each chain, 1-2 sentences: "If [leading KPI] improves → [mechanism] → [lagging KPI] improves because [reasoning]."
+- **Validation approach:** How will the team test whether these causal links hold in practice?
+- **Orphan/broken chain flags:** Any KPIs without upstream/downstream connections
+
+#### 12. INITIATIVES
+From Step 12. Table: Initiative name, linked objectives, priority, timeline, budget, key milestones.
+
+**Include:** Brief rationale for priority ranking (why P0 vs P1).
+
+#### 13. RESOURCE LOADING
+From Step 12. Table per person: role, allocation % per activity, total, status.
+
+**Include:**
+- **Overload warnings:** Any person >100% and mitigation plan
+- **Capacity-strategy alignment:** Does allocation match strategy priorities? Any mismatches?
+
+#### 14. 4D MIX ANALYSIS (if completed)
+From Step 12b. Current vs ideal 4D split per role. Quarterly transition roadmap.
+
+**Include:**
+- **Key misalignment narrative:** Which roles are doing work below their level? What's the path to fix?
+- **Enablers:** What must happen (hiring, AI, SOPs, delegation) to enable the transition?
+
+#### 15. EXECUTION ROADMAP (if Step 12c completed)
+From Step 12c. Quarterly breakdown with monthly milestones, checklist items, revenue targets.
+
+#### 16. VISION ALIGNMENT SCORE
+Final validation:
+- % objectives traced to Vision Milestones
+- Mission Test pass rate per strategy
+- Blind spots: Vision Milestones without supporting strategies
+- Resource utilization assessment
+- Overall alignment rating: Strong (>=80%) / Moderate (50-79%) / Weak (<50%)
+
+**Include:** 1 paragraph narrative on overall plan coherence — strengths and known gaps.
+
+### APPENDIX
+- Research reports references (file paths)
+- BSC data files reference
+- Methodology note: "Prepared using BSC Strategic Planning methodology with AI-human collaborative analysis"
+
+---
+
+## Other Deliverables
+
+### Reality Check Report (Markdown)
+Standalone file — the full Reality Check from Steps 4-5. Export as-is from `bsc-data/reality-check.md`.
+
+### JSON Export
+Schema-compliant. Data only, no narrative.
+
+### DOCX Export
+Professional document: cover page, TOC, executive summary, full BSC analysis (same structure as Markdown above), implementation roadmap, Reality Check as appendix.
 
 ---
 
