@@ -67,14 +67,29 @@ Ngoài Claude Code, bạn có thể dùng skill này trên **bất kỳ AI platf
 | Platform | Cách dùng |
 |----------|-----------|
 | **Claude Code CLI** | `/bsc-builder` — tự động load |
+| **AntiGravity** | Tự detect từ SKILL.md — hỏi agent dùng skill |
 | **Claude Chat** | Upload `bsc-builder-full.md` → prompt bắt đầu |
 | **Gemini** | Upload file hoặc paste content |
 | **ChatGPT** | Upload file, hoặc tạo Custom GPT với file làm knowledge |
 
+## Cài đặt cho AntiGravity (Google)
+
+```bash
+git clone https://github.com/chinhdang/bsc-builder-skill.git ~/.gemini/antigravity/skills/bsc-builder
+```
+
+Hoặc workspace-level:
+```bash
+git clone https://github.com/chinhdang/bsc-builder-skill.git .agents/skills/bsc-builder
+```
+
+AntiGravity tự detect skill từ `SKILL.md` — không cần config thêm.
+
 ## Yêu cầu
 
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) (cho bản skill)
-- Hoặc bất kỳ AI chat nào hỗ trợ file upload (cho bản `bsc-builder-full.md`)
+- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), hoặc
+- [AntiGravity](https://antigravity.google) (Google), hoặc
+- Bất kỳ AI chat nào hỗ trợ file upload (dùng `bsc-builder-full.md`)
 
 ## Giấy phép
 
@@ -113,14 +128,21 @@ In Claude Code CLI:
 /bsc-builder
 ```
 
+## Install for AntiGravity (Google)
+
+```bash
+git clone https://github.com/chinhdang/bsc-builder-skill.git ~/.gemini/antigravity/skills/bsc-builder
+```
+
 ## Use on other AI platforms
 
 Download [`bsc-builder-full.md`](bsc-builder-full.md) (60KB single file) and upload to any AI chat (Claude Chat, Gemini, ChatGPT). Prompt: *"Act as a BSC consultant following the guide in this file. Start from Step 0."*
 
 ## Requirements
 
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) (for skill version)
-- Or any AI chat with file upload support (for `bsc-builder-full.md`)
+- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), or
+- [AntiGravity](https://antigravity.google) (Google), or
+- Any AI chat with file upload support (use `bsc-builder-full.md`)
 
 ## License
 
